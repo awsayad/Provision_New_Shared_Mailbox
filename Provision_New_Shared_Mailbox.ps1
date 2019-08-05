@@ -35,8 +35,7 @@ write-host   'Provisioning a new shared mailbox in Exchange online'
 write-host +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 write-host
 
-try 
-    {
+try {
     write-host "*****************************************************************************************************"
     write-host "*****************************************************************************************************"
     
@@ -51,7 +50,7 @@ try
     New-Mailbox -Shared -Name $MailboxName -DisplayName $MailboxDisplayName -Alias $MailboxAlias -PrimarySmtpAddress $MailboxPrimarySmtpAddress
 
     Write-Host "Step2: adding routing address UPN@o365.huntsman.com"
-    Set-Mailbox -Identity $MailboxPrimarySmtpAddress  -EmailAddresses @{Add="smtp:$MailboxRoutingAddress"}
+    Set-Mailbox -Identity $MailboxPrimarySmtpAddress  -EmailAddresses @{Add = "smtp:$MailboxRoutingAddress" }
 
     Write-Host "Step3: set properties in the mailbox to control how messages sent as or on-half are handled"
     Set-Mailbox -Identity $MailboxPrimarySmtpAddress -MessageCopyForSendOnBehalfEnabled:$True -MessageCopyForSentAsEnabled:$True
@@ -66,45 +65,45 @@ try
     Write-Host "Step5: create CSV file that contain new Groups details"
     
     # Open & create first CSV file in PS
-    $ExcelPath = 'C:\Scripts\ToWorkon\Provision_New_Shared_Mailbox\Create_Groups.csv'
+    $ExcelPath = 'UPDATE CSV FILE PATH'
     $excel = New-Object -ComObject Excel.Application
     $workbook = $excel.Workbooks.Open($ExcelPath)
     
     # Array of Group Types
-    $grouptype =@("GroupOwner", "R", "ADN", "ADY", "EDN", "EDY")
+    $grouptype = @("GroupOwner", "R", "ADN", "ADY", "EDN", "EDY")
     
     # update Name, Alias & DisplayName columns
     $count = 2
-    for ($j=0; $j -le 5; $j++){
-        for ($i=1; $i -le 3;$i++){
-            $workbook.ActiveSheet.Cells.Item($count,$i)  = '$'+ $MailboxArea + $Last5GUID+ '_' + $grouptype[$j]
+    for ($j = 0; $j -le 5; $j++) {
+        for ($i = 1; $i -le 3; $i++) {
+            $workbook.ActiveSheet.Cells.Item($count, $i) = '$' + $MailboxArea + $Last5GUID + '_' + $grouptype[$j]
         }
-        $count+=1
+        $count += 1
     }
     
     # update PrimarySMTPAddress column
     $count2 = 0
-    for ($i=2; $i -le 7;$i++){
-        $workbook.ActiveSheet.Cells.Item($i,4)  = '$'+ $MailboxArea + $Last5GUID + '_' + $grouptype[$count2] +'@huntsman.com'
+    for ($i = 2; $i -le 7; $i++) {
+        $workbook.ActiveSheet.Cells.Item($i, 4) = '$' + $MailboxArea + $Last5GUID + '_' + $grouptype[$count2] + '@DOMAIN.com'
         $count2++
     }
     
     # update ManagedBy column
-    $workbook.ActiveSheet.Cells.Item(2,6)  = 'aws_ayad@huntsman.com'
-    for ($i=3; $i -le 7; $i++){
-        $workbook.ActiveSheet.Cells.Item($i,6)  = '$'+ $MailboxArea + $Last5GUID + '_GroupOwner'
+    $workbook.ActiveSheet.Cells.Item(2, 6) = 'ADD DEFAULT EMAIL ADDRESS'
+    for ($i = 3; $i -le 7; $i++) {
+        $workbook.ActiveSheet.Cells.Item($i, 6) = '$' + $MailboxArea + $Last5GUID + '_GroupOwner'
     }
     
     # update Notes column
-    $AccessNote = @("","","","Read Only access", "Author access w/o Delete", "Author access w/Delete", "Editor access w/o Delete","Editor access w/Delete")
-    $workbook.ActiveSheet.Cells.Item(2,8)  = 'This group is used to manage the membership of the other groups that control access to the shared mailbox named ' + $MailboxDisplayName + ' with an Exchange GUID of ' + $ExchangeGUID + ' .'
-    for ($i=3; $i -le 7; $i++){
-        $workbook.ActiveSheet.Cells.Item($i,8)  = 'Members of this group will have ' + $AccessNote[$i] + ' to the shared mailbox named ' + $MailboxDisplayName +' with an Exchange GUID of ' + $ExchangeGUID + ' .'
+    $AccessNote = @("", "", "", "Read Only access", "Author access w/o Delete", "Author access w/Delete", "Editor access w/o Delete", "Editor access w/Delete")
+    $workbook.ActiveSheet.Cells.Item(2, 8) = 'This group is used to manage the membership of the other groups that control access to the shared mailbox named ' + $MailboxDisplayName + ' with an Exchange GUID of ' + $ExchangeGUID + ' .'
+    for ($i = 3; $i -le 7; $i++) {
+        $workbook.ActiveSheet.Cells.Item($i, 8) = 'Members of this group will have ' + $AccessNote[$i] + ' to the shared mailbox named ' + $MailboxDisplayName + ' with an Exchange GUID of ' + $ExchangeGUID + ' .'
     }
     
     #Obtain Group_Owner cell value
     $workbook.sheets.item(1).activate()
-    $WorkbookTotal=$workbook.Worksheets.item(1)
+    $WorkbookTotal = $workbook.Worksheets.item(1)
     $value = $WorkbookTotal.Cells.Item(2, 1)
     $GroupOwner = $value.Text
 
@@ -117,15 +116,15 @@ try
     write-host "*****************************************************************************************************"
 
     Write-Host "Step6: import first CSV file and make sure the file created successfully"
-    $CreatGroups = Import-Csv C:\Scripts\ToWorkon\Provision_New_Shared_Mailbox\Create_Groups.csv
+    $CreatGroups = Import-Csv 'UPDATE CSV FILE PATH'
     $CreatGroups | Format-Table -AutoSize
 
     Write-Host "Step7: create the new mail-enabled security groups"
-    foreach ($group in $CreatGroups) {New-DistributionGroup -Name $group.Name -Alias $group.Alias -DisplayName $group.DisplayName -PrimarySmtpAddress $group.PrimarySMTPAddress -Type $group.Type -ManagedBy $group.ManagedBy -MemberJoinRestriction $group.MJR -CopyOwnerToMember:$False -Notes $group.Notes}
+    foreach ($group in $CreatGroups) { New-DistributionGroup -Name $group.Name -Alias $group.Alias -DisplayName $group.DisplayName -PrimarySmtpAddress $group.PrimarySMTPAddress -Type $group.Type -ManagedBy $group.ManagedBy -MemberJoinRestriction $group.MJR -CopyOwnerToMember:$False -Notes $group.Notes }
 
     Write-Host "Step8: define CustomEDN & CustomADN access permission"
-    $CustomEDN=@("CreateItems","EditAllItems","EditOwnedItems","FolderVisible","ReadItems")
-    $CustomADN=@("CreateItems","EditOwnedItems","FolderVisible","ReadItems")
+    $CustomEDN = @("CreateItems", "EditAllItems", "EditOwnedItems", "FolderVisible", "ReadItems")
+    $CustomADN = @("CreateItems", "EditOwnedItems", "FolderVisible", "ReadItems")
 
     write-host "*****************************************************************************************************"
     write-host "*****************************************************************************************************"
@@ -133,29 +132,29 @@ try
     Write-Host "Step9: create second CSV file that contain group name & associated specific permission"
 
     # Open & create second CSV file in PS
-    $ExcelPath = 'C:\Scripts\ToWorkon\Provision_New_Shared_Mailbox\Groups_Permission.csv'
+    $ExcelPath = 'UPDATE CSV FILE PATH'
     $excel = New-Object -ComObject Excel.Application
     $workbook = $excel.Workbooks.Open($ExcelPath)
     
     # Array of Group Types
-    $grouptype =@("ADN", "ADY", "EDN", "EDY", "R")
+    $grouptype = @("ADN", "ADY", "EDN", "EDY", "R")
 
     # update BOXEmail column
-    for ($i=2; $i -le 6; $i++){
-        $workbook.ActiveSheet.Cells.Item($i,1)  = $MailboxPrimarySmtpAddress
+    for ($i = 2; $i -le 6; $i++) {
+        $workbook.ActiveSheet.Cells.Item($i, 1) = $MailboxPrimarySmtpAddress
     }
     
     # update ACL columns
     $count = 0
-    for ($i=2; $i -le 6;$i++){
-        $workbook.ActiveSheet.Cells.Item($i,2)  = '$'+ $MailboxArea + $Last5GUID+ '_' + $grouptype[$count]
-    $count+=1
+    for ($i = 2; $i -le 6; $i++) {
+        $workbook.ActiveSheet.Cells.Item($i, 2) = '$' + $MailboxArea + $Last5GUID + '_' + $grouptype[$count]
+        $count += 1
     }
         
     # update Permisison column
-    $Permission = @("","","CustomADN", "Author", "CustomEDN", "Owner" ,"Reviewer")
-    for ($i=2; $i -le 6; $i++){
-        $workbook.ActiveSheet.Cells.Item($i,3)  = $Permission[$i]
+    $Permission = @("", "", "CustomADN", "Author", "CustomEDN", "Owner" , "Reviewer")
+    for ($i = 2; $i -le 6; $i++) {
+        $workbook.ActiveSheet.Cells.Item($i, 3) = $Permission[$i]
     }
 
     # save & close CSV file
@@ -167,27 +166,27 @@ try
     write-host "*****************************************************************************************************"
 
     Write-Host "Step10: grant the mail-enabled security groups (created in step 7) access rights to all folders inside the shared mailbox"   
-    import-csv C:\Scripts\ToWorkon\Provision_New_Shared_Mailbox\Groups_Permission.csv | ForEach-Object { if ($_.permissions -eq "CustomEDN") {C:\Scripts\ToWorkon\Provision_New_Shared_Mailbox\Set_Folder_Permissions_recursive_BULK.ps1 -Mailbox $_.boxemail -User $_.ACL -AccessRights $CustomEDN} elseif ($_.permissions -eq "CustomADN") {C:\Scripts\ToWorkon\Provision_New_Shared_Mailbox\Set_Folder_Permissions_recursive_BULK.ps1 -Mailbox $_.boxemail -User $_.ACL -AccessRights $CustomADN} else {C:\Scripts\ToWorkon\Provision_New_Shared_Mailbox\Set_Folder_Permissions_recursive_BULK.ps1 -Mailbox $_.boxemail -User $_.ACL -AccessRights $_.permissions} }
+    import-csv 'UPDATE CSV FILE PATH' | ForEach-Object { if ($_.permissions -eq "CustomEDN") { 'UPDATE RECURSIVE SCRIPT FILE PATH' -Mailbox $_.boxemail -User $_.ACL -AccessRights $CustomEDN } elseif ($_.permissions -eq "CustomADN") { 'UPDATE RECURSIVE SCRIPT FILE PATH' -Mailbox $_.boxemail -User $_.ACL -AccessRights $CustomADN } else { 'UPDATE RECURSIVE SCRIPT FILE PATH' -Mailbox $_.boxemail -User $_.ACL -AccessRights $_.permissions } }
 
     Write-Host "Step11: set Ownership of Group_Owner group to itself"
     Set-DistributionGroup -Identity $GroupOwner -ManagedBy $GroupOwner -BypassSecurityGroupManagerCheck
 
     Write-Host "Step12: create third CSV file for SendOnBehalf permission"
-    Import-Csv C:\Scripts\ToWorkon\Provision_New_Shared_Mailbox\Groups_Permission.csv | Where-Object {$_.Permissions -notmatch 'Reviewer'} | Export-Csv C:\Scripts\ToWorkon\Provision_New_Shared_Mailbox\Groups_Permission_SendOnBehalf.csv -NoTypeInformation
+    Import-Csv 'UPDATE CSV FILE PATH' | Where-Object { $_.Permissions -notmatch 'Reviewer' } | Export-Csv 'UPDATE CSV FILE PATH' -NoTypeInformation
     
     Write-Host "Step13: assigning the Send On-Behalf (default action)"
-    $groupperms1b = Import-Csv C:\Scripts\ToWorkon\Provision_New_Shared_Mailbox\Groups_Permission_SendOnBehalf.csv
-    foreach ($smb21 in $groupperms1b) {set-mailbox -Identity $smb21.BOXEmail -GrantSendOnBehalfTo @{Add=$smb21.ACL} -Confirm:$False}
-
-    Write-Host "Step14: confirm the Send on Behalf permission is in place"
-    Get-Mailbox $MailboxPrimarySmtpAddress | Where-Object {$_.GrantSendOnBehalfTo -ne $null} | Select-Object PrimarySmtpAddress,GrantSendOnBehalfTo
-
+    $groupperms1b = Import-Csv 'UPDATE CSV FILE PATH'
+    foreach ($smb21 in $groupperms1b) { set-mailbox -Identity $smb21.BOXEmail -GrantSendOnBehalfTo @{Add = $smb21.ACL } -Confirm:$False
     }
 
-finally
-    {
+    Write-Host "Step14: confirm the Send on Behalf permission is in place"
+    Get-Mailbox $MailboxPrimarySmtpAddress | Where-Object { $_.GrantSendOnBehalfTo -ne $null } | Select-Object PrimarySmtpAddress, GrantSendOnBehalfTo
+
+}
+
+finally {
     write-host "*****************************************************************************************************"
     write-host "Done, script completed successfully" -ForegroundColor white -BackgroundColor Red
     write-host "*****************************************************************************************************"
     write-host "`n"       
-    }
+}
