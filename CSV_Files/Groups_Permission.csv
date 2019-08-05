@@ -1,0 +1,6 @@
+BOXEmail,ACL,Permissions
+UPN@domain.com,$GSS00199_ADN,CustomADN
+UPN@domain.com,$GSS00199_ADY,Author
+UPN@domain.com,$GSS00199_EDN,CustomEDN
+UPN@domain.com,$GSS00199_EDY,Owner
+UPN@domain.com,$GSS00199_R,Reviewer
